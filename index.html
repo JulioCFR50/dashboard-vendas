@@ -1,757 +1,1375 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Dashboard de Vendas · E-Commerce Analytics</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · Ganho por SKU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  /* ─── RESET & VARIABLES ─────────────────────────────── */
+  /* ─────────────────────────────────────────
+     TOKENS & RESET
+  ───────────────────────────────────────── */
+  :root {
+    --bg:        #0b0e14;
+    --surface:   #111520;
+    --surface2:  #181d2c;
+    --border:    #1f2638;
+    --border2:   #2a3148;
+    --text:      #e8ecf5;
+    --muted:     #5a6380;
+    --subtle:    #8892aa;
+
+    --accent:    #4f8ef7;
+    --accent2:   #7c5df7;
+    --green:     #22d3a5;
+    --red:       #f75a5a;
+    --yellow:    #f7c948;
+
+    --radius:    10px;
+    --radius-lg: 16px;
+    --font-ui:   'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-disp: 'Syne', sans-serif;
+  }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg:        #0a0c10;
-    --surface:   #111318;
-    --surface2:  #171a22;
-    --border:    #22262f;
-    --border2:   #2c3140;
-    --gold:      #c9a84c;
-    --gold-dim:  #8a6c2a;
-    --gold-glow: rgba(201,168,76,0.12);
-    --text:      #e8eaf0;
-    --text-dim:  #8b90a0;
-    --text-mute: #4a4f60;
-    --green:     #3dca7a;
-    --red:       #e05555;
-    --blue:      #4a9eff;
-    --radius:    8px;
-    --shadow:    0 4px 24px rgba(0,0,0,.6);
-  }
-
-  html { font-size: 14px; }
   body {
+    font-family: var(--font-ui);
     background: var(--bg);
     color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 400;
     min-height: 100vh;
-    line-height: 1.5;
+    overflow-x: hidden;
   }
 
-  /* ─── BACKGROUND TEXTURE ────────────────────────────── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 0;
-    background:
-      radial-gradient(ellipse 60% 40% at 70% 10%, rgba(201,168,76,0.05) 0%, transparent 60%),
-      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(74,158,255,0.04) 0%, transparent 60%);
-    pointer-events: none;
+  /* ─────────────────────────────────────────
+     LAYOUT SHELL
+  ───────────────────────────────────────── */
+  .shell {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
   }
 
-  /* ─── LAYOUT ────────────────────────────────────────── */
-  .app { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 32px 24px 64px; }
+  /* ─────────────────────────────────────────
+     TOPBAR
+  ───────────────────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    height: 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
 
-  /* ─── HEADER ────────────────────────────────────────── */
-  .header {
-    display: flex; align-items: flex-end; justify-content: space-between;
-    border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 32px;
+  .topbar-brand {
+    display: flex; align-items: center; gap: 10px;
   }
-  .header-brand { display: flex; flex-direction: column; gap: 4px; }
-  .header-eyebrow {
-    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
-    color: var(--gold); font-weight: 600;
+
+  .brand-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
   }
-  .header-title {
-    font-family: 'DM Serif Display', serif; font-size: 28px;
-    color: var(--text); line-height: 1.1;
+
+  .brand-name {
+    font-family: var(--font-disp);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
-  .header-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-  .header-meta {
-    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+
+  .topbar-meta {
+    display: flex; align-items: center; gap: 20px;
   }
-  .last-update { font-size: 11px; color: var(--text-mute); }
-  .status-pill {
+
+  .badge-periodo {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .btn-refresh {
     display: flex; align-items: center; gap: 6px;
-    background: rgba(61,202,122,.08); border: 1px solid rgba(61,202,122,.2);
-    border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--green);
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 7px 14px;
+    font-size: 12px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity .2s;
   }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .btn-refresh:hover { opacity: .85; }
+  .btn-refresh svg { width:13px; height:13px; }
 
-  /* ─── CONTROLS ──────────────────────────────────────── */
-  .controls {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    margin-bottom: 28px;
-  }
-  .ctrl-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .1em; }
-  .month-btns { display: flex; gap: 4px; flex-wrap: wrap; }
-  .month-btn {
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--text-dim); font-family: inherit; font-size: 12px; font-weight: 500;
-    padding: 6px 12px; border-radius: var(--radius); cursor: pointer;
-    transition: all .2s;
-  }
-  .month-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
-  .month-btn.active {
-    background: var(--gold-glow); border-color: var(--gold);
-    color: var(--gold); font-weight: 600;
-  }
-  .ctrl-sep { width: 1px; height: 24px; background: var(--border); }
-  .search-wrap { position: relative; }
-  .search-wrap input {
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--text); font-family: inherit; font-size: 12px;
-    padding: 7px 12px 7px 32px; border-radius: var(--radius); width: 180px;
-    outline: none; transition: border-color .2s;
-  }
-  .search-wrap input:focus { border-color: var(--gold-dim); }
-  .search-wrap input::placeholder { color: var(--text-mute); }
-  .search-icon {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    color: var(--text-mute); pointer-events: none; font-size: 13px;
+  /* ─────────────────────────────────────────
+     MAIN CONTENT
+  ───────────────────────────────────────── */
+  .main {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 1800px;
+    margin: 0 auto;
+    width: 100%;
   }
 
-  /* ─── KPI CARDS ─────────────────────────────────────── */
-  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  /* ─────────────────────────────────────────
+     FILTER BAR
+  ───────────────────────────────────────── */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .filter-group {
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .filter-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .filter-select, .filter-input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 7px 12px;
+    font-size: 12px;
+    font-family: var(--font-ui);
+    outline: none;
+    transition: border-color .2s;
+    min-width: 130px;
+  }
+  .filter-select:focus, .filter-input:focus { border-color: var(--accent); }
+
+  .filter-sep {
+    width: 1px; height: 28px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  /* ─────────────────────────────────────────
+     KPI ROW
+  ───────────────────────────────────────── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
   .kpi-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px 20px;
-    display: flex; flex-direction: column; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+    overflow: hidden;
     transition: border-color .2s;
   }
   .kpi-card:hover { border-color: var(--border2); }
-  .kpi-card.gold { border-color: var(--gold-dim); background: linear-gradient(135deg, var(--surface) 0%, rgba(201,168,76,.04) 100%); }
-  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: var(--text-dim); }
-  .kpi-value { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); line-height: 1; }
-  .kpi-value .currency { font-size: 16px; color: var(--text-dim); }
-  .kpi-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
-    width: fit-content;
+  .kpi-card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: var(--kpi-color, var(--accent));
+    opacity: .7;
   }
-  .kpi-badge.pos { background: rgba(61,202,122,.1); color: var(--green); }
-  .kpi-badge.neg { background: rgba(224,85,85,.1); color: var(--red); }
-  .kpi-badge.neu { background: rgba(139,144,160,.1); color: var(--text-dim); }
 
-  /* ─── MATRIX TABLE ──────────────────────────────────── */
+  .kpi-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .kpi-value {
+    font-family: var(--font-disp);
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--subtle);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .kpi-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--kpi-color, var(--accent));
+  }
+
+  /* ─────────────────────────────────────────
+     MATRIX TABLE SECTION
+  ───────────────────────────────────────── */
   .section-header {
-    display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
   }
+
   .section-title {
-    font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--text);
-  }
-  .section-tag {
-    font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
-    color: var(--text-mute); background: var(--surface2); border: 1px solid var(--border);
-    padding: 2px 7px; border-radius: 3px;
+    font-family: var(--font-disp);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
   }
 
+  .section-title span {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .table-controls {
+    display: flex; gap: 10px; align-items: center;
+  }
+
+  .search-box {
+    display: flex; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0 10px;
+    gap: 7px;
+  }
+  .search-box svg { width: 13px; height: 13px; color: var(--muted); flex-shrink:0; }
+  .search-box input {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    outline: none;
+    padding: 8px 0;
+    width: 180px;
+  }
+
+  /* ─────────────────────────────────────────
+     TABLE WRAPPER
+  ───────────────────────────────────────── */
   .table-wrap {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; margin-bottom: 28px;
-    box-shadow: var(--shadow);
-  }
-  .table-scroll { overflow-x: auto; }
-
-  table { border-collapse: collapse; width: 100%; font-size: 12px; }
-
-  /* Header rows */
-  thead tr:first-child th {
-    background: var(--surface2); padding: 10px 12px;
-    border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
-    font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
-    color: var(--text-dim); font-weight: 600; white-space: nowrap;
-  }
-  thead tr:last-child th {
-    background: #141720; padding: 8px 12px;
-    border-bottom: 2px solid var(--border2); border-right: 1px solid var(--border);
-    font-size: 10px; color: var(--text-mute); font-weight: 500; white-space: nowrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
   }
 
-  /* Corner cell */
-  th.corner {
-    background: var(--surface2); color: var(--text-dim);
-    text-align: left; font-size: 10px; text-transform: uppercase;
-    letter-spacing: .1em; vertical-align: bottom;
+  .table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 65vh;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead {
+    position: sticky; top: 0; z-index: 10;
   }
 
   /* Group headers */
-  .th-group-meta  { background: rgba(74,158,255,.06) !important; border-top: 2px solid rgba(74,158,255,.3) !important; }
-  .th-group-real  { background: rgba(61,202,122,.06) !important; border-top: 2px solid rgba(61,202,122,.3) !important; }
-  .th-group-var   { background: rgba(201,168,76,.06)  !important; border-top: 2px solid rgba(201,168,76,.3)  !important; }
-  .th-group-gp    { background: rgba(224,85,85,.06)   !important; border-top: 2px solid rgba(224,85,85,.3)   !important; }
-
-  .th-sub-meta  { color: rgba(74,158,255,.8)  !important; }
-  .th-sub-real  { color: rgba(61,202,122,.8) !important; }
-  .th-sub-var   { color: rgba(201,168,76,.8)  !important; }
-  .th-sub-gp    { color: rgba(224,85,85,.8)   !important; }
-
-  /* Body rows */
-  tbody tr {
+  .th-group {
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-weight: 600;
+    text-align: center;
+    padding: 7px 8px;
     border-bottom: 1px solid var(--border);
-    transition: background .15s;
+    white-space: nowrap;
   }
-  tbody tr:hover { background: rgba(255,255,255,.02); }
-  tbody tr:last-child { border-bottom: none; }
 
-  /* Product name cell */
-  td.prod-name {
-    padding: 10px 12px; font-weight: 600; color: var(--text);
-    white-space: nowrap; border-right: 1px solid var(--border2);
-    min-width: 180px; position: sticky; left: 0;
-    background: var(--surface); z-index: 2;
+  .th-group.g-plan     { border-top: 2px solid var(--accent); }
+  .th-group.g-real     { border-top: 2px solid var(--green); }
+  .th-group.g-var      { border-top: 2px solid var(--yellow); }
+  .th-group.g-gain     { border-top: 2px solid var(--accent2); }
+  .th-group.g-sku      { border-top: 2px solid var(--border2); }
+
+  th {
+    background: var(--surface2);
+    color: var(--subtle);
+    font-weight: 500;
+    text-align: right;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .03em;
   }
-  tbody tr:hover td.prod-name { background: rgba(255,255,255,.015); }
+
+  th:first-child { text-align: left; }
+
+  th:hover { color: var(--text); }
+
+  th .sort-icon { margin-left: 4px; opacity: .4; font-size: 10px; }
+  th.sorted-asc .sort-icon::after  { content: '↑'; opacity:1; }
+  th.sorted-desc .sort-icon::after { content: '↓'; opacity:1; }
+  th:not(.sorted-asc):not(.sorted-desc) .sort-icon::after { content: '↕'; }
 
   td {
-    padding: 10px 12px; text-align: right; color: var(--text-dim);
-    border-right: 1px solid var(--border); white-space: nowrap;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    white-space: nowrap;
+    vertical-align: middle;
   }
-  td:last-child { border-right: none; }
 
-  td.num-meta  { color: rgba(180,200,255,.85); }
-  td.num-real  { color: rgba(140,230,180,.85); }
-  td.num-var   { font-weight: 600; }
-  td.num-pos   { color: var(--green); }
-  td.num-neg   { color: var(--red); }
-  td.num-zero  { color: var(--text-mute); }
-  td.num-gp-pos { color: var(--green); font-weight: 700; }
-  td.num-gp-neg { color: var(--red);   font-weight: 700; }
-
-  /* Total row */
-  tr.total-row { background: var(--surface2) !important; border-top: 2px solid var(--border2); }
-  tr.total-row td { font-weight: 700; color: var(--text); }
-  tr.total-row td.prod-name { color: var(--gold); background: var(--surface2); }
-
-  /* ─── LOADING / EMPTY ────────────────────────────────── */
-  .state-box {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 56px 24px; gap: 14px; color: var(--text-mute);
+  td:first-child {
+    text-align: left;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .state-box .ico { font-size: 32px; }
-  .state-box p { font-size: 12px; max-width: 260px; text-align: center; line-height: 1.7; }
-  .state-box .sub { font-size: 11px; color: #3a3f50; }
+
+  tr:hover td { background: rgba(79,142,247,.04); }
+
+  tr:last-child td { border-bottom: none; }
+
+  .td-muted { color: var(--muted); }
+
+  /* Gain/loss pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-size: 10.5px;
+    font-weight: 500;
+  }
+  .pill.pos { background: rgba(34,211,165,.12); color: var(--green); }
+  .pill.neg { background: rgba(247,90,90,.12);  color: var(--red); }
+  .pill.neu { background: rgba(90,99,128,.1);   color: var(--muted); }
+
+  /* Bar chart inside cell */
+  .bar-wrap {
+    display: flex; align-items: center; gap: 8px;
+    justify-content: flex-end;
+  }
+  .bar-track {
+    width: 60px; height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width .4s ease;
+  }
+  .bar-fill.green { background: var(--green); }
+  .bar-fill.red   { background: var(--red); }
+
+  /* ─────────────────────────────────────────
+     TABLE FOOTER
+  ───────────────────────────────────────── */
+  .table-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap; gap: 8px;
+  }
+
+  .table-count {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  .pagination {
+    display: flex; gap: 4px;
+  }
+
+  .page-btn {
+    width: 28px; height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--subtle);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .page-btn:hover, .page-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ─────────────────────────────────────────
+     CHART ROW
+  ───────────────────────────────────────── */
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 900px) {
+    .chart-row { grid-template-columns: 1fr; }
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-disp);
+    color: var(--text);
+  }
+
+  canvas { width: 100% !important; }
+
+  /* ─────────────────────────────────────────
+     STATUS / LOADING
+  ───────────────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(11,14,20,.92);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+    flex-direction: column; gap: 18px;
+  }
 
   .spinner {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 2px solid var(--border2); border-top-color: var(--gold);
-    animation: spin .8s linear infinite;
+    width: 36px; height: 36px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
   }
+
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ─── FOOTER ────────────────────────────────────────── */
-  .footer {
-    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border);
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 10px; color: var(--text-mute);
+  .overlay-msg {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--subtle);
+    letter-spacing: .06em;
   }
 
-  /* ─── RESPONSIVE ─────────────────────────────────────── */
-  @media (max-width: 900px) {
-    .kpi-row { grid-template-columns: repeat(2, 1fr); }
-    .header  { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .error-box {
+    background: rgba(247,90,90,.1);
+    border: 1px solid var(--red);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--red);
+    font-family: var(--font-mono);
+    max-width: 500px;
+    text-align: center;
   }
-  @media (max-width: 520px) {
-    .kpi-row { grid-template-columns: 1fr; }
-    .app { padding: 20px 12px 48px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* Totals row */
+  .total-row td {
+    background: var(--surface2) !important;
+    font-weight: 600;
+    border-top: 1px solid var(--border2);
+    color: var(--text);
+  }
+  .total-row td:first-child {
+    font-family: var(--font-disp);
+    font-size: 12px;
+    letter-spacing: .04em;
+  }
+
+  .tag {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    background: rgba(79,142,247,.15);
+    color: var(--accent);
+    margin-left: 6px;
   }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <!-- HEADER -->
-  <header class="header">
-    <div class="header-brand">
-      <span class="header-eyebrow">E-Commerce Analytics</span>
-      <h1 class="header-title">Dashboard de Vendas</h1>
-      <p class="header-sub">Análise de Meta vs. Realizado · Variações e Ganho/Perda</p>
+<!-- LOADING OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="overlay-msg" id="overlay-msg">Carregando dados…</div>
+</div>
+
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-icon">📊</div>
+      <div class="brand-name">Ganho por SKU</div>
     </div>
-    <div class="header-meta">
-      <span class="last-update" id="lastUpdate">—</span>
-      <span class="status-pill"><span class="status-dot"></span>Dados ao vivo</span>
+    <div class="topbar-meta">
+      <div class="badge-periodo" id="badge-periodo">–</div>
+      <button class="btn-refresh" onclick="loadData()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 8a7 7 0 1 0 .5-2.6M1 2v4h4"/>
+        </svg>
+        Atualizar
+      </button>
     </div>
   </header>
 
-  <!-- CONTROLS -->
-  <div class="controls">
-    <span class="ctrl-label">Mês</span>
-    <div class="month-btns" id="monthBtns"></div>
-    <span class="ctrl-sep"></span>
-    <div class="search-wrap">
-      <span class="search-icon">⌕</span>
-      <input type="text" id="searchInput" placeholder="Filtrar produto…" />
-    </div>
-  </div>
+  <div class="main">
 
-  <!-- KPI CARDS -->
-  <div class="kpi-row" id="kpiRow">
-    <div class="kpi-card gold">
-      <span class="kpi-label">Meta QTD Total</span>
-      <span class="kpi-value" id="kpi-metaQtd">—</span>
+    <!-- FILTER BAR -->
+    <div class="filter-bar" id="filter-bar">
+      <div class="filter-group">
+        <span class="filter-label">Período</span>
+        <select class="filter-select" id="f-periodo" onchange="applyFilters()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-sep"></div>
+      <div class="filter-group">
+        <span class="filter-label">Canal GP</span>
+        <select class="filter-select" id="f-canal" onchange="applyFilters()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">UF</span>
+        <select class="filter-select" id="f-uf" onchange="applyFilters()">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Gerente</span>
+        <select class="filter-select" id="f-gerente" onchange="applyFilters()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Linha</span>
+        <select class="filter-select" id="f-linha" onchange="applyFilters()">
+          <option value="">Todas</option>
+        </select>
+      </div>
     </div>
-    <div class="kpi-card gold">
-      <span class="kpi-label">Meta Preço Líq. Total</span>
-      <span class="kpi-value" id="kpi-metaPreco"><span class="currency">R$</span> —</span>
-    </div>
-    <div class="kpi-card">
-      <span class="kpi-label">Real QTD Total</span>
-      <span class="kpi-value" id="kpi-realQtd">—</span>
-      <span class="kpi-badge neu" id="kpi-varQtdPct">—</span>
-    </div>
-    <div class="kpi-card">
-      <span class="kpi-label">Real Preço Líq. Total</span>
-      <span class="kpi-value" id="kpi-realPreco"><span class="currency">R$</span> —</span>
-      <span class="kpi-badge neu" id="kpi-varPrecoPct">—</span>
-    </div>
-  </div>
 
-  <!-- MATRIX TABLE -->
-  <div class="section-header">
-    <h2 class="section-title">Matriz Linha × Produto</h2>
-    <span class="section-tag" id="tableTag">—</span>
-  </div>
+    <!-- KPI ROW -->
+    <div class="kpi-row" id="kpi-row">
+      <div class="kpi-card" style="--kpi-color: var(--accent)">
+        <div class="kpi-label">Receita Líquida Real</div>
+        <div class="kpi-value" id="kpi-rl">—</div>
+        <div class="kpi-sub"><span class="kpi-dot"></span> Soma todos os SKUs</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color: var(--green)">
+        <div class="kpi-label">Qtd Vendida Real</div>
+        <div class="kpi-value" id="kpi-qtd">—</div>
+        <div class="kpi-sub"><span class="kpi-dot"></span> Unidades realizadas</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color: var(--yellow)">
+        <div class="kpi-label">Qtd Meta (Plano)</div>
+        <div class="kpi-value" id="kpi-meta">—</div>
+        <div class="kpi-sub"><span class="kpi-dot"></span> Volume planejado</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color: var(--accent2)">
+        <div class="kpi-label">Ganho / Perda Total (R$)</div>
+        <div class="kpi-value" id="kpi-ganho">—</div>
+        <div class="kpi-sub"><span class="kpi-dot"></span> Qtd × Preço Liq + Var. Preço</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color: var(--red)">
+        <div class="kpi-label">Var. Qtd (vs Meta)</div>
+        <div class="kpi-value" id="kpi-vqtd">—</div>
+        <div class="kpi-sub"><span class="kpi-dot"></span> Real − Plano</div>
+      </div>
+      <div class="kpi-card" style="--kpi-color: var(--green)">
+        <div class="kpi-label">Margem Contrib. Média</div>
+        <div class="kpi-value" id="kpi-mc">—</div>
+        <div class="kpi-sub"><span class="kpi-dot"></span> % sobre Receita Líquida</div>
+      </div>
+    </div>
 
-  <div class="table-wrap">
-    <div class="table-scroll">
-      <div id="tableContainer">
-        <div class="state-box">
-          <div class="spinner"></div>
-          <p>Carregando dados…</p>
-          <span class="sub">Conectando à planilha Google Sheets</span>
+    <!-- MATRIX TABLE -->
+    <div>
+      <div class="section-header">
+        <div class="section-title">
+          <span></span> Matriz Ganho/Perda por SKU
+          <span class="tag">Power BI Style</span>
+        </div>
+        <div class="table-controls">
+          <div class="search-box">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="6.5" cy="6.5" r="5"/><path d="m11 11 3 3"/>
+            </svg>
+            <input type="text" placeholder="Buscar produto…" id="search-input" oninput="applyFilters()">
+          </div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table id="matrix-table">
+            <colgroup>
+              <col style="min-width:220px">
+              <col style="min-width:100px">
+              <col style="min-width:100px">
+              <col style="min-width:100px">
+              <col style="min-width:110px">
+              <col style="min-width:110px">
+              <col style="min-width:90px">
+              <col style="min-width:90px">
+              <col style="min-width:110px">
+              <col style="min-width:110px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="th-group g-sku" rowspan="1">PRODUTO / SKU</th>
+                <th class="th-group g-plan" colspan="2">PLANO</th>
+                <th class="th-group g-real" colspan="2">REALIZADO</th>
+                <th class="th-group g-var" colspan="2">VARIAÇÃO ABS</th>
+                <th class="th-group g-gain" colspan="2">GANHO / PERDA (R$)</th>
+                <th class="th-group g-gain"></th>
+              </tr>
+              <tr>
+                <th data-col="produto" onclick="sortBy('produto')">Produto <span class="sort-icon"></span></th>
+                <th data-col="metaQtd" onclick="sortBy('metaQtd')">Qtd Meta <span class="sort-icon"></span></th>
+                <th data-col="precoLiq" onclick="sortBy('precoLiq')">Preço Liq. <span class="sort-icon"></span></th>
+                <th data-col="realQtd" onclick="sortBy('realQtd')">Qtd Real <span class="sort-icon"></span></th>
+                <th data-col="receitaLiq" onclick="sortBy('receitaLiq')">Rec. Líq. R$ <span class="sort-icon"></span></th>
+                <th data-col="varQtd" onclick="sortBy('varQtd')">Δ Qtd <span class="sort-icon"></span></th>
+                <th data-col="varPreco" onclick="sortBy('varPreco')">Δ Preço <span class="sort-icon"></span></th>
+                <th data-col="ganhoQtd" onclick="sortBy('ganhoQtd')">G/P Qtd R$ <span class="sort-icon"></span></th>
+                <th data-col="ganhoPreco" onclick="sortBy('ganhoPreco')">G/P Preço R$ <span class="sort-icon"></span></th>
+                <th data-col="ganhoTotal" onclick="sortBy('ganhoTotal')">Total R$ <span class="sort-icon"></span></th>
+              </tr>
+            </thead>
+            <tbody id="matrix-body">
+              <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">Aguardando dados…</td></tr>
+            </tbody>
+            <tfoot id="matrix-foot"></tfoot>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span class="table-count" id="table-count">0 produtos</span>
+          <div class="pagination" id="pagination"></div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <span>Fonte: Google Sheets · Atualização automática a cada carregamento</span>
-    <span id="footerRows">—</span>
-  </footer>
+    <!-- CHARTS -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-title">Top 10 — Ganho/Perda Total por SKU (R$)</div>
+        <canvas id="chart-ganho" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 10 — Qtd Real vs Meta</div>
+        <canvas id="chart-qtd" height="220"></canvas>
+      </div>
+    </div>
 
-</div>
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
 <script>
-/* ══════════════════════════════════════════════════════════
-   ▸  CONFIGURAÇÃO — substitua o link abaixo pelo seu CSV
-   ══════════════════════════════════════════════════════════ */
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTryKWNwLreQUtMj6V4ahfWOnT2ZJf3R8CdybHnYUcRUP7wgAbWTH_UsrXUWZbAytveNQUgX30hvdDa/pub?output=csv";
+/* ════════════════════════════════════════════════════════
+   ⚙️  CONFIGURAÇÃO — INSIRA AQUI O SEU LINK CSV DO GOOGLE SHEETS
+   ════════════════════════════════════════════════════════ */
+const SHEETS_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTryKWNwLreQUtMj6V4ahfWOnT2ZJf3R8CdybHnYUcRUP7wgAbWTH_UsrXUWZbAytveNQUgX30hvdDa/pub";
 
-/* ══════════════════════════════════════════════════════════
-   ▸  UTILITÁRIOS
-   ══════════════════════════════════════════════════════════ */
-const fmt  = n => isNaN(n) ? '—' : Number(n).toLocaleString('pt-BR');
-const fmtR = n => isNaN(n) ? '—' : Number(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-const fmtPct = n => isNaN(n) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(1) + '%';
+// Números das abas (gid): ajuste se necessário
+// Aba 0 = Preço Liq. | Aba 1 = Dados | Aba 2 = Meta Volume
+const GID_PRECO_LIQ   = 0;
+const GID_DADOS       = 1;
+const GID_META_VOLUME = 2;
+/* ════════════════════════════════════════════════════════ */
 
-function parseNum(v) {
-  if (v === undefined || v === null || String(v).trim() === '') return 0;
-  const s = String(v).trim().replace(/\s/g,'').replace(',','.');
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+/* ─────────── helpers de CSV ─────────── */
+function sheetUrl(gid) {
+  return `${SHEETS_BASE_URL}?gid=${gid}&single=true&output=csv`;
 }
 
-/* ══════════════════════════════════════════════════════════
-   ▸  PARSE CSV  (lida com campos entre aspas e vírgulas)
-   ══════════════════════════════════════════════════════════ */
+async function fetchCSV(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.text();
+}
+
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const result = [];
-  for (const line of lines) {
-    const row = [];
-    let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') { inQ = !inQ; continue; }
-      if (c === ',' && !inQ) { row.push(cur.trim()); cur = ''; continue; }
-      cur += c;
+  const rows = [];
+  let inQ = false, row = [], cur = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], n = text[i+1];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (!inQ && c === ',') { row.push(cur.trim()); cur = ''; continue; }
+    if (!inQ && (c === '\n' || (c === '\r' && n === '\n'))) {
+      if (c === '\r') i++;
+      row.push(cur.trim()); rows.push(row); row = []; cur = ''; continue;
     }
-    row.push(cur.trim());
-    result.push(row);
+    cur += c;
   }
-  return result;
-}
-
-/* ══════════════════════════════════════════════════════════
-   ▸  ESTADO GLOBAL
-   ══════════════════════════════════════════════════════════ */
-let allRows   = [];   // todas as linhas de dados já parseadas
-let headers   = [];   // cabeçalhos originais
-let selMonth  = 'Todos';
-let search    = '';
-
-/* ══════════════════════════════════════════════════════════
-   ▸  DETECTA COLUNAS  (agnóstico ao nome exato da coluna)
-   ══════════════════════════════════════════════════════════
-   Estratégia:
-   - Busca padrões no nome do cabeçalho (case-insensitive)
-   - Retorna índices de colunas relevantes
-*/
-function detectColumns(headers) {
-  const h = headers.map(s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
-  const find = (...terms) => h.findIndex(col => terms.some(t => col.includes(t)));
-
-  return {
-    mes:       find('mes','mês','month'),
-    linha:     find('linha','line','segmento','categoria'),
-    produto:   find('produto','product','item','descricao','descrição','nome'),
-    metaQtd:   find('meta_qtd','meta qtd','qtd_meta','quantidade meta','meta vol','volume meta'),
-    metaPreco: find('meta_preco','meta preco','preco_meta','preco liq meta','preço liq meta','meta_pl','meta pl','preco liquido meta','preço liquido meta'),
-    realQtd:   find('real_qtd','real qtd','qtd_real','qtd real','dados qtd','qtd dados','realizado qtd'),
-    realPreco: find('real_preco','real preco','preco_real','preco liq real','preço liq real','dados pl','real pl','preco liquido real'),
-  };
-}
-
-/* ══════════════════════════════════════════════════════════
-   ▸  FETCH & PROCESS
-   ══════════════════════════════════════════════════════════ */
-async function loadData() {
-  try {
-    const proxyURL = `https://api.allorigins.win/raw?url=${encodeURIComponent(CSV_URL)}`;
-    let res = await fetch(proxyURL);
-    if (!res.ok) throw new Error('proxy');
-    const text = await res.text();
-    processCSV(text);
-  } catch {
-    // fallback direto (funciona quando CORS permitido ou no Google Sites)
-    try {
-      const res = await fetch(CSV_URL);
-      if (!res.ok) throw new Error('direct');
-      const text = await res.text();
-      processCSV(text);
-    } catch (e) {
-      showError(e);
-    }
-  }
-}
-
-function processCSV(text) {
-  const rows = parseCSV(text);
-  if (rows.length < 2) { showError(new Error('Planilha vazia ou sem dados')); return; }
-
-  headers = rows[0];
-  const cols = detectColumns(headers);
-
-  // Valida colunas mínimas
-  const missing = Object.entries(cols).filter(([k,v]) => v === -1).map(([k]) => k);
-  if (missing.length > 4) {
-    showError(new Error('Não foi possível detectar as colunas necessárias. Verifique os cabeçalhos: ' + headers.join(', ')));
-    return;
-  }
-
-  allRows = rows.slice(1).map(r => ({
-    mes:       r[cols.mes]     || '',
-    linha:     r[cols.linha]   || '',
-    produto:   r[cols.produto] || '',
-    metaQtd:   parseNum(r[cols.metaQtd]),
-    metaPreco: parseNum(r[cols.metaPreco]),
-    realQtd:   parseNum(r[cols.realQtd]),
-    realPreco: parseNum(r[cols.realPreco]),
-  })).filter(r => r.produto);
-
-  document.getElementById('lastUpdate').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR');
-  buildMonthFilter();
-  render();
-}
-
-function showError(e) {
-  document.getElementById('tableContainer').innerHTML = `
-    <div class="state-box">
-      <span class="ico">⚠</span>
-      <p>Não foi possível carregar os dados da planilha.</p>
-      <span class="sub">${e.message || 'Verifique o link CSV e as permissões de compartilhamento.'}</span>
-    </div>`;
-}
-
-/* ══════════════════════════════════════════════════════════
-   ▸  FILTROS
-   ══════════════════════════════════════════════════════════ */
-function buildMonthFilter() {
-  const months = ['Todos', ...new Set(allRows.map(r => r.mes).filter(Boolean))];
-  const wrap = document.getElementById('monthBtns');
-  wrap.innerHTML = months.map(m =>
-    `<button class="month-btn${m === selMonth ? ' active' : ''}" data-m="${m}">${m}</button>`
-  ).join('');
-  wrap.querySelectorAll('.month-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selMonth = btn.dataset.m;
-      wrap.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      render();
-    });
-  });
-}
-
-function filteredRows() {
-  let rows = allRows;
-  if (selMonth !== 'Todos') rows = rows.filter(r => r.mes === selMonth);
-  if (search) {
-    const s = search.toLowerCase();
-    rows = rows.filter(r =>
-      r.produto.toLowerCase().includes(s) ||
-      r.linha.toLowerCase().includes(s)
-    );
-  }
+  if (cur || row.length) { row.push(cur.trim()); rows.push(row); }
   return rows;
 }
 
-/* ══════════════════════════════════════════════════════════
-   ▸  AGREGA  (linha → produto)
-   ══════════════════════════════════════════════════════════ */
-function aggregate(rows) {
-  // estrutura: { linha: { produto: { metaQtd, metaPreco, realQtd, realPreco } } }
-  const map = {};
-  const linhas = [];
-  const produtos = [];
-  const prodSet = new Set();
-  const linhaSet = new Set();
+function parseNum(s) {
+  if (!s || s === '-' || s === '') return 0;
+  return parseFloat(String(s).replace(/[^\d,.-]/g,'').replace(',','.')) || 0;
+}
 
-  for (const r of rows) {
-    const l = r.linha || '(sem linha)';
-    const p = r.produto;
-    if (!map[l]) { map[l] = {}; linhaSet.add(l); }
-    if (!map[l][p]) { map[l][p] = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0}; }
-    map[l][p].metaQtd   += r.metaQtd;
-    map[l][p].metaPreco += r.metaPreco;
-    map[l][p].realQtd   += r.realQtd;
-    map[l][p].realPreco += r.realPreco;
-    prodSet.add(p);
+function fmtBRL(v) {
+  return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
+}
+
+function fmtNum(v) {
+  return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}).format(v);
+}
+
+function fmtPct(v) {
+  return (v>0?'+':'')+v.toFixed(1)+'%';
+}
+
+/* ─────────── coluna AAAAMM → label ─────────── */
+function labelPeriodo(col) {
+  const m = String(col).match(/^(\d{4})(\d{2})$/);
+  if (!m) return col;
+  const meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `${meses[parseInt(m[2])]}/${m[1].slice(2)}`;
+}
+
+function isPeriodCol(s) {
+  return /^\d{6}$/.test(String(s));
+}
+
+/* ─────────── Estado global ─────────── */
+let RAW = { precoLiq: [], dados: [], meta: [] };
+let MATRIX = [];
+let FILTERED = [];
+let sortCol = 'ganhoTotal', sortDir = -1;
+let page = 0;
+const PAGE_SIZE = 25;
+let chartGanho = null, chartQtd = null;
+
+/* ─────────── Carregamento ─────────── */
+async function loadData() {
+  showOverlay('Carregando planilhas…');
+  try {
+    const [csvP, csvD, csvM] = await Promise.all([
+      fetchCSV(sheetUrl(GID_PRECO_LIQ)),
+      fetchCSV(sheetUrl(GID_DADOS)),
+      fetchCSV(sheetUrl(GID_META_VOLUME))
+    ]);
+
+    RAW.precoLiq = parseCSV(csvP);
+    RAW.dados    = parseCSV(csvD);
+    RAW.meta     = parseCSV(csvM);
+
+    buildMatrix();
+    populateFilters();
+    applyFilters();
+    hideOverlay();
+  } catch(e) {
+    showError('Erro ao carregar dados: ' + e.message);
   }
+}
+
+/* ─────────── Desmonta Preço Liq. (wide → long) ─────────── */
+function buildPrecoLiqMap() {
+  if (!RAW.precoLiq.length) return {};
+  const header = RAW.precoLiq[0];
+  // header: CODIGO, MERCADO, PRODUTO, 202601, ...
+  const periodCols = header.map((h,i) => isPeriodCol(h) ? i : null).filter(i => i !== null);
+  const codigoIdx  = header.findIndex(h => /codigo/i.test(h));
+  const prodIdx    = header.findIndex(h => /produto/i.test(h));
+
+  // map: CODIGO → { periodo → preço }
+  const map = {};
+  for (let r = 1; r < RAW.precoLiq.length; r++) {
+    const row = RAW.precoLiq[r];
+    if (!row || !row[codigoIdx]) continue;
+    const cod = row[codigoIdx].trim();
+    const produto = row[prodIdx] || cod;
+    map[cod] = { produto };
+    for (const ci of periodCols) {
+      map[cod][header[ci]] = parseNum(row[ci]);
+    }
+  }
+  return map;
+}
+
+/* ─────────── Desmonta Meta Volume (wide → long) ─────────── */
+function buildMetaMap() {
+  if (!RAW.meta.length) return {};
+  const header = RAW.meta[0];
+  const periodCols = header.map((h,i) => isPeriodCol(h) ? i : null).filter(i => i !== null);
+  const codigoIdx  = header.findIndex(h => /codigo/i.test(h));
+  const descIdx    = header.findIndex(h => /desc/i.test(h));
+
+  const map = {};
+  for (let r = 1; r < RAW.meta.length; r++) {
+    const row = RAW.meta[r];
+    if (!row || !row[codigoIdx]) continue;
+    const cod = row[codigoIdx].trim();
+    map[cod] = { descricao: row[descIdx] || cod };
+    for (const ci of periodCols) {
+      map[cod][header[ci]] = parseNum(row[ci]);
+    }
+  }
+  return map;
+}
+
+/* ─────────── Lê header de Dados ─────────── */
+function getDadosHeader() {
+  if (!RAW.dados.length) return {};
+  const h = RAW.dados[0];
+  const idx = {};
+  h.forEach((col, i) => { idx[col.trim()] = i; });
+  return { h, idx };
+}
+
+/* ─────────── Todos períodos disponíveis ─────────── */
+function getAllPeriods() {
+  if (!RAW.precoLiq.length) return [];
+  return RAW.precoLiq[0].filter(isPeriodCol);
+}
+
+/* ─────────── Constroi a MATRIX ─────────── */
+function buildMatrix() {
+  const precoMap = buildPrecoLiqMap();
+  const metaMap  = buildMetaMap();
+  const { h, idx } = getDadosHeader();
+
+  const periods = getAllPeriods();
+
+  // Detecta filtro de período selecionado (para soma parcial)
+  const fPeriodo = document.getElementById('f-periodo')?.value || '';
+
+  // Agrega dados por produto
+  const prodAgg = {};
+
+  for (let r = 1; r < RAW.dados.length; r++) {
+    const row = RAW.dados[r];
+    if (!row || !row[idx['Produtos']]) continue;
+
+    const produto = row[idx['Produtos']]?.trim();
+    const periodo = ''; // dados não têm coluna período explícita — usaremos NF p/ inferir depois
+
+    if (!prodAgg[produto]) {
+      prodAgg[produto] = {
+        produto,
+        canal:  row[idx['Canal GP']] || '',
+        uf:     row[idx['UF']]       || '',
+        gerente:row[idx['Gerente']]  || '',
+        linha:  row[idx['Linha ']]   || row[idx['Linha']] || '',
+        qtdVend: 0,
+        receitaLiq: 0,
+        margemContrib: 0,
+        margemContribTotal: 0,
+        count: 0
+      };
+    }
+    prodAgg[produto].qtdVend        += parseNum(row[idx['Qtd Vend.']]);
+    prodAgg[produto].receitaLiq     += parseNum(row[idx['Receita Líquida']]);
+    prodAgg[produto].margemContribTotal += parseNum(row[idx['Margem de Contribuição']]);
+    prodAgg[produto].count++;
+  }
+
+  // Calcula margem %
+  for (const p of Object.values(prodAgg)) {
+    p.margemPct = p.receitaLiq ? (p.margemContribTotal / p.receitaLiq) * 100 : 0;
+  }
+
+  // Soma meta e preço por produto (somando todos os períodos ou período selecionado)
+  // Preço: média ponderada pelo total de períodos
+  // Meta: soma de todos os períodos (ou do período selecionado)
+  const targetPeriods = (fPeriodo && isPeriodCol(fPeriodo)) ? [fPeriodo] : periods;
+
+  // Map produto → codigo (lookup pelo nome)
+  function findCodigoPorProduto(nome) {
+    for (const [cod, info] of Object.entries(precoMap)) {
+      if (info.produto?.trim().toLowerCase() === nome.toLowerCase()) return cod;
+    }
+    // fallback: procura no metaMap pela descricao
+    for (const [cod, info] of Object.entries(metaMap)) {
+      if (info.descricao?.trim().toLowerCase() === nome.toLowerCase()) return cod;
+    }
+    return null;
+  }
+
+  const matrix = [];
+
+  for (const [produto, agg] of Object.entries(prodAgg)) {
+    const cod = findCodigoPorProduto(produto);
+
+    let metaQtd = 0;
+    let precoLiqMedio = 0;
+    let precoCount = 0;
+
+    if (cod) {
+      for (const p of targetPeriods) {
+        metaQtd += (metaMap[cod]?.[p] ?? 0);
+        const pl = precoMap[cod]?.[p] ?? 0;
+        if (pl > 0) { precoLiqMedio += pl; precoCount++; }
+      }
+    }
+    if (precoCount > 0) precoLiqMedio /= precoCount;
+
+    // Se não encontrou preço no mapa, estima pelo realizado
+    if (precoLiqMedio === 0 && agg.qtdVend > 0) {
+      precoLiqMedio = agg.receitaLiq / agg.qtdVend;
+    }
+
+    // Variações
+    const varQtd   = agg.qtdVend - metaQtd;
+    const varPreco  = precoLiqMedio > 0 ? (agg.receitaLiq / (agg.qtdVend || 1)) - precoLiqMedio : 0;
+
+    // Ganho/Perda
+    // G/P Qtd = (Qtd Real - Qtd Meta) × Preço Liq Meta
+    const ganhoQtd   = varQtd * precoLiqMedio;
+    // G/P Preço = (Preço Real - Preço Meta) × Qtd Real
+    const ganhoPreco = varPreco * agg.qtdVend;
+    const ganhoTotal = ganhoQtd + ganhoPreco;
+
+    matrix.push({
+      produto,
+      canal:  agg.canal,
+      uf:     agg.uf,
+      gerente:agg.gerente,
+      linha:  agg.linha,
+      metaQtd,
+      precoLiq: precoLiqMedio,
+      realQtd:  agg.qtdVend,
+      receitaLiq: agg.receitaLiq,
+      varQtd,
+      varPreco,
+      ganhoQtd,
+      ganhoPreco,
+      ganhoTotal,
+      margemPct: agg.margemPct
+    });
+  }
+
+  MATRIX = matrix;
+
+  // Preenche badge período
+  const pLabel = fPeriodo ? labelPeriodo(fPeriodo) : `${targetPeriods.map(labelPeriodo).join(', ')} (todos)`;
+  document.getElementById('badge-periodo').textContent = pLabel;
+}
+
+/* ─────────── Filtros ─────────── */
+function populateFilters() {
+  const { idx } = getDadosHeader();
+  const periods = getAllPeriods();
+
+  fillSelect('f-periodo', ['', ...periods], v => v ? labelPeriodo(v) : 'Todos');
+  fillSelect('f-canal',   unique(RAW.dados, idx, 'Canal GP'));
+  fillSelect('f-uf',      unique(RAW.dados, idx, 'UF'));
+  fillSelect('f-gerente', unique(RAW.dados, idx, 'Gerente'));
+  fillSelect('f-linha',   unique(RAW.dados, idx, 'Linha ') || unique(RAW.dados, idx, 'Linha'));
+}
+
+function unique(dados, idx, col) {
+  const vals = new Set();
+  for (let r = 1; r < dados.length; r++) {
+    const v = dados[r]?.[idx[col]];
+    if (v) vals.add(v.trim());
+  }
+  return ['', ...Array.from(vals).sort()];
+}
+
+function fillSelect(id, vals, labelFn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const cur = el.value;
+  el.innerHTML = '';
+  for (const v of vals) {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = labelFn ? labelFn(v) : (v || 'Todos');
+    el.appendChild(o);
+  }
+  if ([...el.options].some(o => o.value === cur)) el.value = cur;
+}
+
+function applyFilters() {
+  buildMatrix(); // reconstroi com período selecionado
+
+  const canal   = document.getElementById('f-canal')?.value   || '';
+  const uf      = document.getElementById('f-uf')?.value      || '';
+  const gerente = document.getElementById('f-gerente')?.value || '';
+  const linha   = document.getElementById('f-linha')?.value   || '';
+  const search  = document.getElementById('search-input')?.value.toLowerCase() || '';
+
+  FILTERED = MATRIX.filter(row => {
+    if (canal   && row.canal?.trim()   !== canal)   return false;
+    if (uf      && row.uf?.trim()      !== uf)      return false;
+    if (gerente && row.gerente?.trim() !== gerente) return false;
+    if (linha   && row.linha?.trim()   !== linha)   return false;
+    if (search  && !row.produto.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  page = 0;
+  sortData();
+  renderTable();
+  renderKPIs();
+  renderCharts();
+}
+
+/* ─────────── Ordenação ─────────── */
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  document.querySelectorAll('th').forEach(th => {
+    th.classList.remove('sorted-asc','sorted-desc');
+    if (th.dataset.col === col) th.classList.add(sortDir === 1 ? 'sorted-asc' : 'sorted-desc');
+  });
+  sortData();
+  renderTable();
+}
+
+function sortData() {
+  FILTERED.sort((a, b) => {
+    const av = a[sortCol], bv = b[sortCol];
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * ((av||0) - (bv||0));
+  });
+}
+
+/* ─────────── Render tabela ─────────── */
+function renderTable() {
+  const body = document.getElementById('matrix-body');
+  const foot = document.getElementById('matrix-foot');
+  const count = document.getElementById('table-count');
+  const pagDiv = document.getElementById('pagination');
+
+  const total = FILTERED.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (page >= pages) page = Math.max(0, pages - 1);
+  const slice = FILTERED.slice(page * PAGE_SIZE, (page+1) * PAGE_SIZE);
+
+  count.textContent = `${fmtNum(total)} produto${total!==1?'s':''}`;
+
+  // Max vals para bar charts
+  const maxRL  = Math.max(...FILTERED.map(r => Math.abs(r.receitaLiq)), 1);
+  const maxGT  = Math.max(...FILTERED.map(r => Math.abs(r.ganhoTotal)), 1);
+
+  body.innerHTML = slice.map(row => {
+    const vqPill  = pillClass(row.varQtd);
+    const vPPill  = pillClass(row.varPreco);
+    const gQPill  = pillClass(row.ganhoQtd);
+    const gPPill  = pillClass(row.ganhoPreco);
+    const gtPill  = pillClass(row.ganhoTotal);
+    const rlPct   = Math.min(100, (Math.abs(row.receitaLiq) / maxRL) * 100);
+    const gtPct   = Math.min(100, (Math.abs(row.ganhoTotal) / maxGT) * 100);
+
+    return `<tr>
+      <td title="${row.produto}">${row.produto}</td>
+      <td>${row.metaQtd > 0 ? fmtNum(row.metaQtd) : '<span class="td-muted">—</span>'}</td>
+      <td>${row.precoLiq > 0 ? fmtBRL(row.precoLiq) : '<span class="td-muted">—</span>'}</td>
+      <td>
+        <div class="bar-wrap">
+          <div class="bar-track"><div class="bar-fill" style="width:${rlPct}%"></div></div>
+          ${fmtNum(row.realQtd)}
+        </div>
+      </td>
+      <td>${fmtBRL(row.receitaLiq)}</td>
+      <td><span class="pill ${vqPill}">${row.varQtd >= 0 ? '+' : ''}${fmtNum(row.varQtd)}</span></td>
+      <td><span class="pill ${vPPill}">${row.varPreco >= 0 ? '+' : ''}${fmtBRL(row.varPreco)}</span></td>
+      <td><span class="pill ${gQPill}">${fmtBRL(row.ganhoQtd)}</span></td>
+      <td><span class="pill ${gPPill}">${fmtBRL(row.ganhoPreco)}</span></td>
+      <td>
+        <div class="bar-wrap">
+          <div class="bar-track"><div class="bar-fill ${row.ganhoTotal>=0?'green':'red'}" style="width:${gtPct}%"></div></div>
+          <span class="pill ${gtPill}">${fmtBRL(row.ganhoTotal)}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Totals
+  const T = FILTERED.reduce((acc, r) => {
+    acc.metaQtd    += r.metaQtd    || 0;
+    acc.realQtd    += r.realQtd    || 0;
+    acc.receitaLiq += r.receitaLiq || 0;
+    acc.varQtd     += r.varQtd     || 0;
+    acc.ganhoQtd   += r.ganhoQtd   || 0;
+    acc.ganhoPreco += r.ganhoPreco || 0;
+    acc.ganhoTotal += r.ganhoTotal || 0;
+    return acc;
+  }, { metaQtd:0, realQtd:0, receitaLiq:0, varQtd:0, ganhoQtd:0, ganhoPreco:0, ganhoTotal:0 });
+
+  foot.innerHTML = `<tr class="total-row">
+    <td>TOTAL (${fmtNum(total)} SKUs)</td>
+    <td>${fmtNum(T.metaQtd)}</td>
+    <td>—</td>
+    <td>${fmtNum(T.realQtd)}</td>
+    <td>${fmtBRL(T.receitaLiq)}</td>
+    <td><span class="pill ${pillClass(T.varQtd)}">${T.varQtd>=0?'+':''}${fmtNum(T.varQtd)}</span></td>
+    <td>—</td>
+    <td><span class="pill ${pillClass(T.ganhoQtd)}">${fmtBRL(T.ganhoQtd)}</span></td>
+    <td><span class="pill ${pillClass(T.ganhoPreco)}">${fmtBRL(T.ganhoPreco)}</span></td>
+    <td><span class="pill ${pillClass(T.ganhoTotal)}">${fmtBRL(T.ganhoTotal)}</span></td>
+  </tr>`;
+
+  // Pagination
+  pagDiv.innerHTML = '';
+  if (pages > 1) {
+    const addBtn = (label, target, active) => {
+      const b = document.createElement('button');
+      b.className = 'page-btn' + (active ? ' active' : '');
+      b.textContent = label;
+      b.onclick = () => { page = target; sortData(); renderTable(); };
+      pagDiv.appendChild(b);
+    };
+    if (page > 0) addBtn('‹', page-1, false);
+    for (let i = Math.max(0, page-2); i < Math.min(pages, page+3); i++) addBtn(i+1, i, i===page);
+    if (page < pages-1) addBtn('›', page+1, false);
+  }
+}
+
+function pillClass(v) {
+  if (v > 0) return 'pos';
+  if (v < 0) return 'neg';
+  return 'neu';
+}
+
+/* ─────────── KPIs ─────────── */
+function renderKPIs() {
+  const T = FILTERED.reduce((acc, r) => {
+    acc.rl  += r.receitaLiq || 0;
+    acc.qtd += r.realQtd    || 0;
+    acc.meta+= r.metaQtd    || 0;
+    acc.ganho+=r.ganhoTotal ||0;
+    acc.vqtd+=r.varQtd     ||0;
+    acc.mc  += r.margemPct  ||0;
+    return acc;
+  }, {rl:0,qtd:0,meta:0,ganho:0,vqtd:0,mc:0});
+
+  setText('kpi-rl',   fmtBRL(T.rl));
+  setText('kpi-qtd',  fmtNum(T.qtd));
+  setText('kpi-meta', fmtNum(T.meta));
+  setText('kpi-ganho',fmtBRL(T.ganho));
+  setText('kpi-vqtd', (T.vqtd>=0?'+':'')+fmtNum(T.vqtd));
+  setText('kpi-mc',   FILTERED.length ? fmtPct(T.mc/FILTERED.length) : '—');
+
+  colorKpi('kpi-vqtd', T.vqtd);
+  colorKpi('kpi-ganho', T.ganho);
+  colorKpi('kpi-mc', T.mc);
+}
+
+function setText(id, v) { const el = document.getElementById(id); if(el) el.textContent = v; }
+
+function colorKpi(id, v) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.color = v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text)';
+}
+
+/* ─────────── Charts ─────────── */
+function renderCharts() {
+  const top10GT = [...FILTERED].sort((a,b)=>b.ganhoTotal-a.ganhoTotal).slice(0,10);
+  const top10RL = [...FILTERED].sort((a,b)=>b.realQtd-a.realQtd).slice(0,10);
+
+  renderBarChart('chart-ganho', chartGanho, top10GT, r => r.ganhoTotal,
+    r => r.ganhoTotal >= 0 ? 'rgba(34,211,165,.8)' : 'rgba(247,90,90,.8)',
+    v => fmtBRL(v));
+  chartGanho = Chart.getChart('chart-ganho');
+
+  renderGroupChart('chart-qtd', chartQtd, top10RL);
+  chartQtd = Chart.getChart('chart-qtd');
+}
+
+function chartDefaults() {
   return {
-    map,
-    linhas: [...linhaSet],
-    produtos: [...prodSet].sort()
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1f30',
+        borderColor: '#2a3148',
+        borderWidth: 1,
+        titleColor: '#8892aa',
+        bodyColor: '#e8ecf5',
+        titleFont: { family: "'DM Mono', monospace", size: 10 },
+        bodyFont: { family: "'DM Mono', monospace", size: 11 }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#5a6380', font: { family: "'DM Mono', monospace", size: 9 }, maxRotation: 30 },
+        grid: { color: 'rgba(31,38,56,.6)' }
+      },
+      y: {
+        ticks: { color: '#5a6380', font: { family: "'DM Mono', monospace", size: 9 } },
+        grid: { color: 'rgba(31,38,56,.6)' }
+      }
+    }
   };
 }
 
-/* ══════════════════════════════════════════════════════════
-   ▸  RENDER PRINCIPAL
-   ══════════════════════════════════════════════════════════ */
-function render() {
-  const rows = filteredRows();
-  const { map, linhas, produtos } = aggregate(rows);
-
-  // KPIs
-  let totMetaQtd=0, totMetaPreco=0, totRealQtd=0, totRealPreco=0;
-  for (const r of rows) {
-    totMetaQtd   += r.metaQtd;
-    totMetaPreco += r.metaPreco;
-    totRealQtd   += r.realQtd;
-    totRealPreco += r.realPreco;
-  }
-  document.getElementById('kpi-metaQtd').textContent  = fmt(totMetaQtd);
-  document.getElementById('kpi-metaPreco').innerHTML  = `<span class="currency">R$</span> ${fmtR(totMetaPreco)}`;
-  document.getElementById('kpi-realQtd').textContent  = fmt(totRealQtd);
-  document.getElementById('kpi-realPreco').innerHTML  = `<span class="currency">R$</span> ${fmtR(totRealPreco)}`;
-
-  const pctQtd   = totMetaQtd   ? ((totRealQtd-totMetaQtd)/totMetaQtd*100)     : 0;
-  const pctPreco = totMetaPreco ? ((totRealPreco-totMetaPreco)/totMetaPreco*100) : 0;
-  renderBadge('kpi-varQtdPct',   pctQtd);
-  renderBadge('kpi-varPrecoPct', pctPreco);
-
-  document.getElementById('tableTag').textContent =
-    `${rows.length} registros · ${linhas.length} linhas · ${produtos.length} produtos`;
-  document.getElementById('footerRows').textContent =
-    `${rows.length} registros exibidos de ${allRows.length} totais`;
-
-  if (rows.length === 0) {
-    document.getElementById('tableContainer').innerHTML = `
-      <div class="state-box">
-        <span class="ico">◎</span>
-        <p>Nenhum dado para o filtro selecionado.</p>
-      </div>`;
-    return;
-  }
-
-  renderMatrix(map, linhas, produtos);
-}
-
-function renderBadge(id, pct) {
-  const el = document.getElementById(id);
-  const cls = pct > 0 ? 'pos' : pct < 0 ? 'neg' : 'neu';
-  const arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '●';
-  el.className = `kpi-badge ${cls}`;
-  el.textContent = `${arrow} ${fmtPct(pct)} vs Meta`;
-}
-
-/* ══════════════════════════════════════════════════════════
-   ▸  TABELA MATRIZ
-   ══════════════════════════════════════════════════════════ */
-function renderMatrix(map, linhas, produtos) {
-  /* Colunas da tabela:
-     Linha | Produto |
-       META QTD | META PREÇO LIQ |
-       REAL QTD | REAL PREÇO LIQ |
-       VAR QTD  | VAR PREÇO LIQ  |
-       G/P QTD  | G/P PREÇO LIQ
-  */
-
-  let html = `<table>
-  <thead>
-    <tr>
-      <th class="corner" rowspan="2">Linha</th>
-      <th class="corner" rowspan="2">Produto</th>
-      <th colspan="2" class="th-group-meta">META (Volume)</th>
-      <th colspan="2" class="th-group-real">REALIZADO (Dados)</th>
-      <th colspan="2" class="th-group-var">VARIAÇÃO</th>
-      <th colspan="2" class="th-group-gp">GANHO / PERDA</th>
-    </tr>
-    <tr>
-      <th class="th-sub-meta">QTD</th>
-      <th class="th-sub-meta">Preço Líq.</th>
-      <th class="th-sub-real">QTD</th>
-      <th class="th-sub-real">Preço Líq.</th>
-      <th class="th-sub-var">Δ QTD</th>
-      <th class="th-sub-var">Δ Preço Líq.</th>
-      <th class="th-sub-gp">G/P QTD</th>
-      <th class="th-sub-gp">G/P Preço Líq.</th>
-    </tr>
-  </thead>
-  <tbody>`;
-
-  // totalizadores por produto
-  const totProd = {};
-  for (const prod of produtos) {
-    totProd[prod] = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0};
-  }
-
-  // grand totals
-  let GT = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0};
-
-  for (const linha of linhas) {
-    const prods = map[linha] || {};
-    const prodList = produtos.filter(p => prods[p]);
-    if (!prodList.length) continue;
-
-    // subtotais da linha
-    let ST = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0};
-    for (const p of prodList) {
-      const d = prods[p];
-      ST.metaQtd   += d.metaQtd;
-      ST.metaPreco += d.metaPreco;
-      ST.realQtd   += d.realQtd;
-      ST.realPreco += d.realPreco;
-      totProd[p].metaQtd   += d.metaQtd;
-      totProd[p].metaPreco += d.metaPreco;
-      totProd[p].realQtd   += d.realQtd;
-      totProd[p].realPreco += d.realPreco;
+function renderBarChart(canvasId, existing, data, valFn, colorFn, fmtFn) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (existing) existing.destroy();
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: data.map(r => r.produto.length > 18 ? r.produto.slice(0,18)+'…' : r.produto),
+      datasets: [{
+        data: data.map(valFn),
+        backgroundColor: data.map(colorFn),
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: {
+            label: ctx => fmtFn(ctx.raw)
+          }
+        }
+      },
+      scales: {
+        x: { ...chartDefaults().scales.x },
+        y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => fmtBRL(v) } }
+      }
     }
-    GT.metaQtd   += ST.metaQtd;
-    GT.metaPreco += ST.metaPreco;
-    GT.realQtd   += ST.realQtd;
-    GT.realPreco += ST.realPreco;
+  });
+}
 
-    // linhas de produtos
-    for (let i = 0; i < prodList.length; i++) {
-      const prod = prodList[i];
-      const d    = prods[prod];
-      html += matrixRow(i === 0 ? linha : '', prodList.length, prod, d, i === 0);
+function renderGroupChart(canvasId, existing, data) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (existing) existing.destroy();
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: data.map(r => r.produto.length > 18 ? r.produto.slice(0,18)+'…' : r.produto),
+      datasets: [
+        {
+          label: 'Qtd Real',
+          data: data.map(r => r.realQtd),
+          backgroundColor: 'rgba(79,142,247,.75)',
+          borderRadius: 4,
+          borderSkipped: false
+        },
+        {
+          label: 'Qtd Meta',
+          data: data.map(r => r.metaQtd),
+          backgroundColor: 'rgba(247,201,72,.5)',
+          borderRadius: 4,
+          borderSkipped: false
+        }
+      ]
+    },
+    options: {
+      ...chartDefaults(),
+      plugins: {
+        ...chartDefaults().plugins,
+        legend: {
+          display: true,
+          labels: { color: '#8892aa', font: { family: "'DM Mono', monospace", size: 9 }, boxWidth: 10 }
+        },
+        tooltip: {
+          ...chartDefaults().plugins.tooltip,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}` }
+        }
+      },
+      scales: {
+        x: { ...chartDefaults().scales.x },
+        y: { ...chartDefaults().scales.y, ticks: { ...chartDefaults().scales.y.ticks, callback: v => fmtNum(v) } }
+      }
     }
-
-    // subtotal da linha
-    html += subtotalRow(`↳ ${linha}`, ST);
-  }
-
-  // TOTAL GERAL
-  html += grandTotalRow(GT);
-
-  html += '</tbody></table>';
-  document.getElementById('tableContainer').innerHTML = html;
+  });
 }
 
-function matrixRow(linha, span, produto, d, isFirst) {
-  const varQtd   = d.realQtd   - d.metaQtd;
-  const varPreco = d.realPreco - d.metaPreco;
-  const pctQtd   = d.metaQtd   ? (varQtd/d.metaQtd*100)     : 0;
-  const pctPreco = d.metaPreco ? (varPreco/d.metaPreco*100)  : 0;
-
-  const cQ  = varQtd   > 0 ? 'num-pos' : varQtd   < 0 ? 'num-neg' : 'num-zero';
-  const cP  = varPreco > 0 ? 'num-pos' : varPreco < 0 ? 'num-neg' : 'num-zero';
-  const gpQ = varQtd   > 0 ? 'num-gp-pos' : varQtd   < 0 ? 'num-gp-neg' : 'num-zero';
-  const gpP = varPreco > 0 ? 'num-gp-pos' : varPreco < 0 ? 'num-gp-neg' : 'num-zero';
-
-  const arrowQ = varQtd   > 0 ? '▲ ' : varQtd   < 0 ? '▼ ' : '';
-  const arrowP = varPreco > 0 ? '▲ ' : varPreco < 0 ? '▼ ' : '';
-
-  return `<tr>
-    <td class="prod-name" style="color:var(--text-dim);font-size:11px">${escH(linha)}</td>
-    <td class="prod-name">${escH(produto)}</td>
-    <td class="num-meta">${fmt(d.metaQtd)}</td>
-    <td class="num-meta">R$ ${fmtR(d.metaPreco)}</td>
-    <td class="num-real">${fmt(d.realQtd)}</td>
-    <td class="num-real">R$ ${fmtR(d.realPreco)}</td>
-    <td class="num-var ${cQ}">${arrowQ}${fmt(Math.abs(varQtd))} (${fmtPct(pctQtd)})</td>
-    <td class="num-var ${cP}">${arrowP}R$ ${fmtR(Math.abs(varPreco))} (${fmtPct(pctPreco)})</td>
-    <td class="${gpQ}">${varQtd > 0 ? '+' : varQtd < 0 ? '-' : ''}${fmt(Math.abs(varQtd))}</td>
-    <td class="${gpP}">${varPreco >= 0 ? '+' : '-'}R$ ${fmtR(Math.abs(varPreco))}</td>
-  </tr>`;
+/* ─────────── Overlay ─────────── */
+function showOverlay(msg) {
+  const ov = document.getElementById('overlay');
+  const om = document.getElementById('overlay-msg');
+  ov.style.display = 'flex';
+  ov.innerHTML = `<div class="spinner"></div><div class="overlay-msg">${msg}</div>`;
 }
 
-function subtotalRow(label, d) {
-  const varQtd   = d.realQtd   - d.metaQtd;
-  const varPreco = d.realPreco - d.metaPreco;
-  const pctQtd   = d.metaQtd   ? (varQtd/d.metaQtd*100)    : 0;
-  const pctPreco = d.metaPreco ? (varPreco/d.metaPreco*100) : 0;
-
-  const cQ  = varQtd   > 0 ? 'num-pos' : varQtd   < 0 ? 'num-neg' : 'num-zero';
-  const cP  = varPreco > 0 ? 'num-pos' : varPreco < 0 ? 'num-neg' : 'num-zero';
-  const gpQ = varQtd   > 0 ? 'num-gp-pos' : varQtd   < 0 ? 'num-gp-neg' : 'num-zero';
-  const gpP = varPreco > 0 ? 'num-gp-pos' : varPreco < 0 ? 'num-gp-neg' : 'num-zero';
-
-  return `<tr style="background:rgba(255,255,255,.015);border-top:1px solid var(--border2)">
-    <td colspan="2" class="prod-name" style="color:var(--text-mute);font-size:11px;font-style:italic">${escH(label)}</td>
-    <td class="num-meta" style="font-weight:600">${fmt(d.metaQtd)}</td>
-    <td class="num-meta" style="font-weight:600">R$ ${fmtR(d.metaPreco)}</td>
-    <td class="num-real" style="font-weight:600">${fmt(d.realQtd)}</td>
-    <td class="num-real" style="font-weight:600">R$ ${fmtR(d.realPreco)}</td>
-    <td class="num-var ${cQ}" style="font-weight:600">${fmt(varQtd)} (${fmtPct(pctQtd)})</td>
-    <td class="num-var ${cP}" style="font-weight:600">R$ ${fmtR(varPreco)} (${fmtPct(pctPreco)})</td>
-    <td class="${gpQ}">${varQtd >= 0 ? '+' : ''}${fmt(varQtd)}</td>
-    <td class="${gpP}">${varPreco >= 0 ? '+' : ''}R$ ${fmtR(varPreco)}</td>
-  </tr>`;
+function hideOverlay() {
+  const ov = document.getElementById('overlay');
+  ov.style.display = 'none';
 }
 
-function grandTotalRow(d) {
-  const varQtd   = d.realQtd   - d.metaQtd;
-  const varPreco = d.realPreco - d.metaPreco;
-  const pctQtd   = d.metaQtd   ? (varQtd/d.metaQtd*100)    : 0;
-  const pctPreco = d.metaPreco ? (varPreco/d.metaPreco*100) : 0;
-
-  const cQ  = varQtd   > 0 ? 'num-pos' : varQtd   < 0 ? 'num-neg' : 'num-zero';
-  const cP  = varPreco > 0 ? 'num-pos' : varPreco < 0 ? 'num-neg' : 'num-zero';
-  const gpQ = varQtd   > 0 ? 'num-gp-pos' : varQtd   < 0 ? 'num-gp-neg' : 'num-zero';
-  const gpP = varPreco > 0 ? 'num-gp-pos' : varPreco < 0 ? 'num-gp-neg' : 'num-zero';
-
-  return `<tr class="total-row">
-    <td colspan="2" class="prod-name">TOTAL GERAL</td>
-    <td>${fmt(d.metaQtd)}</td>
-    <td>R$ ${fmtR(d.metaPreco)}</td>
-    <td>${fmt(d.realQtd)}</td>
-    <td>R$ ${fmtR(d.realPreco)}</td>
-    <td class="${cQ}">${fmt(varQtd)} (${fmtPct(pctQtd)})</td>
-    <td class="${cP}">R$ ${fmtR(varPreco)} (${fmtPct(pctPreco)})</td>
-    <td class="${gpQ}" style="font-size:13px">${varQtd >= 0 ? '+' : ''}${fmt(varQtd)}</td>
-    <td class="${gpP}" style="font-size:13px">${varPreco >= 0 ? '+' : ''}R$ ${fmtR(varPreco)}</td>
-  </tr>`;
+function showError(msg) {
+  const ov = document.getElementById('overlay');
+  ov.innerHTML = `
+    <div class="error-box">⚠️ ${msg}<br><br>
+      <small>Verifique se o link da planilha está correto e publicado.<br>
+      Clique fora para fechar.</small>
+    </div>`;
+  ov.onclick = hideOverlay;
 }
 
-function escH(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-/* ══════════════════════════════════════════════════════════
-   ▸  BUSCA
-   ══════════════════════════════════════════════════════════ */
-document.getElementById('searchInput').addEventListener('input', e => {
-  search = e.target.value.trim();
-  render();
-});
-
-/* ══════════════════════════════════════════════════════════
-   ▸  BOOT
-   ══════════════════════════════════════════════════════════ */
-loadData();
+/* ─────────── Init ─────────── */
+document.addEventListener('DOMContentLoaded', loadData);
 </script>
 </body>
 </html>
