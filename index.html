@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard de Vendas · E-Commerce Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+  /* ─── RESET & VARIABLES ─────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0c10;
+    --surface:   #111318;
+    --surface2:  #171a22;
+    --border:    #22262f;
+    --border2:   #2c3140;
+    --gold:      #c9a84c;
+    --gold-dim:  #8a6c2a;
+    --gold-glow: rgba(201,168,76,0.12);
+    --text:      #e8eaf0;
+    --text-dim:  #8b90a0;
+    --text-mute: #4a4f60;
+    --green:     #3dca7a;
+    --red:       #e05555;
+    --blue:      #4a9eff;
+    --radius:    8px;
+    --shadow:    0 4px 24px rgba(0,0,0,.6);
+  }
+
+  html { font-size: 14px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ─── BACKGROUND TEXTURE ────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 70% 10%, rgba(201,168,76,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(74,158,255,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  /* ─── LAYOUT ────────────────────────────────────────── */
+  .app { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* ─── HEADER ────────────────────────────────────────── */
+  .header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 32px;
+  }
+  .header-brand { display: flex; flex-direction: column; gap: 4px; }
+  .header-eyebrow {
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--gold); font-weight: 600;
+  }
+  .header-title {
+    font-family: 'DM Serif Display', serif; font-size: 28px;
+    color: var(--text); line-height: 1.1;
+  }
+  .header-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .header-meta {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  .last-update { font-size: 11px; color: var(--text-mute); }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(61,202,122,.08); border: 1px solid rgba(61,202,122,.2);
+    border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--green);
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ─── CONTROLS ──────────────────────────────────────── */
+  .controls {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .ctrl-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .1em; }
+  .month-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+  .month-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim); font-family: inherit; font-size: 12px; font-weight: 500;
+    padding: 6px 12px; border-radius: var(--radius); cursor: pointer;
+    transition: all .2s;
+  }
+  .month-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .month-btn.active {
+    background: var(--gold-glow); border-color: var(--gold);
+    color: var(--gold); font-weight: 600;
+  }
+  .ctrl-sep { width: 1px; height: 24px; background: var(--border); }
+  .search-wrap { position: relative; }
+  .search-wrap input {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: inherit; font-size: 12px;
+    padding: 7px 12px 7px 32px; border-radius: var(--radius); width: 180px;
+    outline: none; transition: border-color .2s;
+  }
+  .search-wrap input:focus { border-color: var(--gold-dim); }
+  .search-wrap input::placeholder { color: var(--text-mute); }
+  .search-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--text-mute); pointer-events: none; font-size: 13px;
+  }
+
+  /* ─── KPI CARDS ─────────────────────────────────────── */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .2s;
+  }
+  .kpi-card:hover { border-color: var(--border2); }
+  .kpi-card.gold { border-color: var(--gold-dim); background: linear-gradient(135deg, var(--surface) 0%, rgba(201,168,76,.04) 100%); }
+  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: var(--text-dim); }
+  .kpi-value { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); line-height: 1; }
+  .kpi-value .currency { font-size: 16px; color: var(--text-dim); }
+  .kpi-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+    width: fit-content;
+  }
+  .kpi-badge.pos { background: rgba(61,202,122,.1); color: var(--green); }
+  .kpi-badge.neg { background: rgba(224,85,85,.1); color: var(--red); }
+  .kpi-badge.neu { background: rgba(139,144,160,.1); color: var(--text-dim); }
+
+  /* ─── MATRIX TABLE ──────────────────────────────────── */
+  .section-header {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--text);
+  }
+  .section-tag {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--text-mute); background: var(--surface2); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 3px;
+  }
+
+  .table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 28px;
+    box-shadow: var(--shadow);
+  }
+  .table-scroll { overflow-x: auto; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+
+  /* Header rows */
+  thead tr:first-child th {
+    background: var(--surface2); padding: 10px 12px;
+    border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+    font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--text-dim); font-weight: 600; white-space: nowrap;
+  }
+  thead tr:last-child th {
+    background: #141720; padding: 8px 12px;
+    border-bottom: 2px solid var(--border2); border-right: 1px solid var(--border);
+    font-size: 10px; color: var(--text-mute); font-weight: 500; white-space: nowrap;
+  }
+
+  /* Corner cell */
+  th.corner {
+    background: var(--surface2); color: var(--text-dim);
+    text-align: left; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .1em; vertical-align: bottom;
+  }
+
+  /* Group headers */
+  .th-group-meta  { background: rgba(74,158,255,.06) !important; border-top: 2px solid rgba(74,158,255,.3) !important; }
+  .th-group-real  { background: rgba(61,202,122,.06) !important; border-top: 2px solid rgba(61,202,122,.3) !important; }
+  .th-group-var   { background: rgba(201,168,76,.06)  !important; border-top: 2px solid rgba(201,168,76,.3)  !important; }
+  .th-group-gp    { background: rgba(224,85,85,.06)   !important; border-top: 2px solid rgba(224,85,85,.3)   !important; }
+
+  .th-sub-meta  { color: rgba(74,158,255,.8)  !important; }
+  .th-sub-real  { color: rgba(61,202,122,.8) !important; }
+  .th-sub-var   { color: rgba(201,168,76,.8)  !important; }
+  .th-sub-gp    { color: rgba(224,85,85,.8)   !important; }
+
+  /* Body rows */
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  tbody tr:hover { background: rgba(255,255,255,.02); }
+  tbody tr:last-child { border-bottom: none; }
+
+  /* Product name cell */
+  td.prod-name {
+    padding: 10px 12px; font-weight: 600; color: var(--text);
+    white-space: nowrap; border-right: 1px solid var(--border2);
+    min-width: 180px; position: sticky; left: 0;
+    background: var(--surface); z-index: 2;
+  }
+  tbody tr:hover td.prod-name { background: rgba(255,255,255,.015); }
+
+  td {
+    padding: 10px 12px; text-align: right; color: var(--text-dim);
+    border-right: 1px solid var(--border); white-space: nowrap;
+  }
+  td:last-child { border-right: none; }
+
+  td.num-meta  { color: rgba(180,200,255,.85); }
+  td.num-real  { color: rgba(140,230,180,.85); }
+  td.num-var   { font-weight: 600; }
+  td.num-pos   { color: var(--green); }
+  td.num-neg   { color: var(--red); }
+  td.num-zero  { color: var(--text-mute); }
+  td.num-gp-pos { color: var(--green); font-weight: 700; }
+  td.num-gp-neg { color: var(--red);   font-weight: 700; }
+
+  /* Total row */
+  tr.total-row { background: var(--surface2) !important; border-top: 2px solid var(--border2); }
+  tr.total-row td { font-weight: 700; color: var(--text); }
+  tr.total-row td.prod-name { color: var(--gold); background: var(--surface2); }
+
+  /* ─── LOADING / EMPTY ────────────────────────────────── */
+  .state-box {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 56px 24px; gap: 14px; color: var(--text-mute);
+  }
+  .state-box .ico { font-size: 32px; }
+  .state-box p { font-size: 12px; max-width: 260px; text-align: center; line-height: 1.7; }
+  .state-box .sub { font-size: 11px; color: #3a3f50; }
+
+  .spinner {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border2); border-top-color: var(--gold);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── FOOTER ────────────────────────────────────────── */
+  .footer {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; color: var(--text-mute);
+  }
+
+  /* ─── RESPONSIVE ─────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .header  { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+  @media (max-width: 520px) {
+    .kpi-row { grid-template-columns: 1fr; }
+    .app { padding: 20px 12px 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="header-eyebrow">E-Commerce Analytics</span>
+      <h1 class="header-title">Dashboard de Vendas</h1>
+      <p class="header-sub">Análise de Meta vs. Realizado · Variações e Ganho/Perda</p>
+    </div>
+    <div class="header-meta">
+      <span class="last-update" id="lastUpdate">—</span>
+      <span class="status-pill"><span class="status-dot"></span>Dados ao vivo</span>
+    </div>
+  </header>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <span class="ctrl-label">Mês</span>
+    <div class="month-btns" id="monthBtns"></div>
+    <span class="ctrl-sep"></span>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Filtrar produto…" />
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card gold">
+      <span class="kpi-label">Meta QTD Total</span>
+      <span class="kpi-value" id="kpi-metaQtd">—</span>
+    </div>
+    <div class="kpi-card gold">
+      <span class="kpi-label">Meta Preço Líq. Total</span>
+      <span class="kpi-value" id="kpi-metaPreco"><span class="currency">R$</span> —</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Real QTD Total</span>
+      <span class="kpi-value" id="kpi-realQtd">—</span>
+      <span class="kpi-badge neu" id="kpi-varQtdPct">—</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Real Preço Líq. Total</span>
+      <span class="kpi-value" id="kpi-realPreco"><span class="currency">R$</span> —</span>
+      <span class="kpi-badge neu" id="kpi-varPrecoPct">—</span>
+    </div>
+  </div>
+
+  <!-- MATRIX TABLE -->
+  <div class="section-header">
+    <h2 class="section-title">Matriz Linha × Produto</h2>
+    <span class="section-tag" id="tableTag">—</span>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <div id="tableContainer">
+        <div class="state-box">
+          <div class="spinner"></div>
+          <p>Carregando dados…</p>
+          <span class="sub">Conectando à planilha Google Sheets</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <span>Fonte: Google Sheets · Atualização automática a cada carregamento</span>
+    <span id="footerRows">—</span>
+  </footer>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   ▸  CONFIGURAÇÃO — substitua o link abaixo pelo seu CSV
+   ══════════════════════════════════════════════════════════ */
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTryKWNwLreQUtMj6V4ahfWOnT2ZJf3R8CdybHnYUcRUP7wgAbWTH_UsrXUWZbAytveNQUgX30hvdDa/pub?output=csv";
+
+/* ══════════════════════════════════════════════════════════
+   ▸  UTILITÁRIOS
+   ══════════════════════════════════════════════════════════ */
+const fmt  = n => isNaN(n) ? '—' : Number(n).toLocaleString('pt-BR');
+const fmtR = n => isNaN(n) ? '—' : Number(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtPct = n => isNaN(n) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(1) + '%';
+
+function parseNum(v) {
+  if (v === undefined || v === null || String(v).trim() === '') return 0;
+  const s = String(v).trim().replace(/\s/g,'').replace(',','.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  PARSE CSV  (lida com campos entre aspas e vírgulas)
+   ══════════════════════════════════════════════════════════ */
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const result = [];
+  for (const line of lines) {
+    const row = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === ',' && !inQ) { row.push(cur.trim()); cur = ''; continue; }
+      cur += c;
+    }
+    row.push(cur.trim());
+    result.push(row);
+  }
+  return result;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  ESTADO GLOBAL
+   ══════════════════════════════════════════════════════════ */
+let allRows   = [];   // todas as linhas de dados já parseadas
+let headers   = [];   // cabeçalhos originais
+let selMonth  = 'Todos';
+let search    = '';
+
+/* ══════════════════════════════════════════════════════════
+   ▸  DETECTA COLUNAS  (agnóstico ao nome exato da coluna)
+   ══════════════════════════════════════════════════════════
+   Estratégia:
+   - Busca padrões no nome do cabeçalho (case-insensitive)
+   - Retorna índices de colunas relevantes
+*/
+function detectColumns(headers) {
+  const h = headers.map(s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+  const find = (...terms) => h.findIndex(col => terms.some(t => col.includes(t)));
+
+  return {
+    mes:       find('mes','mês','month'),
+    linha:     find('linha','line','segmento','categoria'),
+    produto:   find('produto','product','item','descricao','descrição','nome'),
+    metaQtd:   find('meta_qtd','meta qtd','qtd_meta','quantidade meta','meta vol','volume meta'),
+    metaPreco: find('meta_preco','meta preco','preco_meta','preco liq meta','preço liq meta','meta_pl','meta pl','preco liquido meta','preço liquido meta'),
+    realQtd:   find('real_qtd','real qtd','qtd_real','qtd real','dados qtd','qtd dados','realizado qtd'),
+    realPreco: find('real_preco','real preco','preco_real','preco liq real','preço liq real','dados pl','real pl','preco liquido real'),
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  FETCH & PROCESS
+   ══════════════════════════════════════════════════════════ */
+async function loadData() {
+  try {
+    const proxyURL = `https://api.allorigins.win/raw?url=${encodeURIComponent(CSV_URL)}`;
+    let res = await fetch(proxyURL);
+    if (!res.ok) throw new Error('proxy');
+    const text = await res.text();
+    processCSV(text);
+  } catch {
+    // fallback direto (funciona quando CORS permitido ou no Google Sites)
+    try {
+      const res = await fetch(CSV_URL);
+      if (!res.ok) throw new Error('direct');
+      const text = await res.text();
+      processCSV(text);
+    } catch (e) {
+      showError(e);
+    }
+  }
+}
+
+function processCSV(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) { showError(new Error('Planilha vazia ou sem dados')); return; }
+
+  headers = rows[0];
+  const cols = detectColumns(headers);
+
+  // Valida colunas mínimas
+  const missing = Object.entries(cols).filter(([k,v]) => v === -1).map(([k]) => k);
+  if (missing.length > 4) {
+    showError(new Error('Não foi possível detectar as colunas necessárias. Verifique os cabeçalhos: ' + headers.join(', ')));
+    return;
+  }
+
+  allRows = rows.slice(1).map(r => ({
+    mes:       r[cols.mes]     || '',
+    linha:     r[cols.linha]   || '',
+    produto:   r[cols.produto] || '',
+    metaQtd:   parseNum(r[cols.metaQtd]),
+    metaPreco: parseNum(r[cols.metaPreco]),
+    realQtd:   parseNum(r[cols.realQtd]),
+    realPreco: parseNum(r[cols.realPreco]),
+  })).filter(r => r.produto);
+
+  document.getElementById('lastUpdate').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR');
+  buildMonthFilter();
+  render();
+}
+
+function showError(e) {
+  document.getElementById('tableContainer').innerHTML = `
+    <div class="state-box">
+      <span class="ico">⚠</span>
+      <p>Não foi possível carregar os dados da planilha.</p>
+      <span class="sub">${e.message || 'Verifique o link CSV e as permissões de compartilhamento.'}</span>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  FILTROS
+   ══════════════════════════════════════════════════════════ */
+function buildMonthFilter() {
+  const months = ['Todos', ...new Set(allRows.map(r => r.mes).filter(Boolean))];
+  const wrap = document.getElementById('monthBtns');
+  wrap.innerHTML = months.map(m =>
+    `<button class="month-btn${m === selMonth ? ' active' : ''}" data-m="${m}">${m}</button>`
+  ).join('');
+  wrap.querySelectorAll('.month-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selMonth = btn.dataset.m;
+      wrap.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+}
+
+function filteredRows() {
+  let rows = allRows;
+  if (selMonth !== 'Todos') rows = rows.filter(r => r.mes === selMonth);
+  if (search) {
+    const s = search.toLowerCase();
+    rows = rows.filter(r =>
+      r.produto.toLowerCase().includes(s) ||
+      r.linha.toLowerCase().includes(s)
+    );
+  }
+  return rows;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  AGREGA  (linha → produto)
+   ══════════════════════════════════════════════════════════ */
+function aggregate(rows) {
+  // estrutura: { linha: { produto: { metaQtd, metaPreco, realQtd, realPreco } } }
+  const map = {};
+  const linhas = [];
+  const produtos = [];
+  const prodSet = new Set();
+  const linhaSet = new Set();
+
+  for (const r of rows) {
+    const l = r.linha || '(sem linha)';
+    const p = r.produto;
+    if (!map[l]) { map[l] = {}; linhaSet.add(l); }
+    if (!map[l][p]) { map[l][p] = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0}; }
+    map[l][p].metaQtd   += r.metaQtd;
+    map[l][p].metaPreco += r.metaPreco;
+    map[l][p].realQtd   += r.realQtd;
+    map[l][p].realPreco += r.realPreco;
+    prodSet.add(p);
+  }
+  return {
+    map,
+    linhas: [...linhaSet],
+    produtos: [...prodSet].sort()
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  RENDER PRINCIPAL
+   ══════════════════════════════════════════════════════════ */
+function render() {
+  const rows = filteredRows();
+  const { map, linhas, produtos } = aggregate(rows);
+
+  // KPIs
+  let totMetaQtd=0, totMetaPreco=0, totRealQtd=0, totRealPreco=0;
+  for (const r of rows) {
+    totMetaQtd   += r.metaQtd;
+    totMetaPreco += r.metaPreco;
+    totRealQtd   += r.realQtd;
+    totRealPreco += r.realPreco;
+  }
+  document.getElementById('kpi-metaQtd').textContent  = fmt(totMetaQtd);
+  document.getElementById('kpi-metaPreco').innerHTML  = `<span class="currency">R$</span> ${fmtR(totMetaPreco)}`;
+  document.getElementById('kpi-realQtd').textContent  = fmt(totRealQtd);
+  document.getElementById('kpi-realPreco').innerHTML  = `<span class="currency">R$</span> ${fmtR(totRealPreco)}`;
+
+  const pctQtd   = totMetaQtd   ? ((totRealQtd-totMetaQtd)/totMetaQtd*100)     : 0;
+  const pctPreco = totMetaPreco ? ((totRealPreco-totMetaPreco)/totMetaPreco*100) : 0;
+  renderBadge('kpi-varQtdPct',   pctQtd);
+  renderBadge('kpi-varPrecoPct', pctPreco);
+
+  document.getElementById('tableTag').textContent =
+    `${rows.length} registros · ${linhas.length} linhas · ${produtos.length} produtos`;
+  document.getElementById('footerRows').textContent =
+    `${rows.length} registros exibidos de ${allRows.length} totais`;
+
+  if (rows.length === 0) {
+    document.getElementById('tableContainer').innerHTML = `
+      <div class="state-box">
+        <span class="ico">◎</span>
+        <p>Nenhum dado para o filtro selecionado.</p>
+      </div>`;
+    return;
+  }
+
+  renderMatrix(map, linhas, produtos);
+}
+
+function renderBadge(id, pct) {
+  const el = document.getElementById(id);
+  const cls = pct > 0 ? 'pos' : pct < 0 ? 'neg' : 'neu';
+  const arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '●';
+  el.className = `kpi-badge ${cls}`;
+  el.textContent = `${arrow} ${fmtPct(pct)} vs Meta`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  TABELA MATRIZ
+   ══════════════════════════════════════════════════════════ */
+function renderMatrix(map, linhas, produtos) {
+  /* Colunas da tabela:
+     Linha | Produto |
+       META QTD | META PREÇO LIQ |
+       REAL QTD | REAL PREÇO LIQ |
+       VAR QTD  | VAR PREÇO LIQ  |
+       G/P QTD  | G/P PREÇO LIQ
+  */
+
+  let html = `<table>
+  <thead>
+    <tr>
+      <th class="corner" rowspan="2">Linha</th>
+      <th class="corner" rowspan="2">Produto</th>
+      <th colspan="2" class="th-group-meta">META (Volume)</th>
+      <th colspan="2" class="th-group-real">REALIZADO (Dados)</th>
+      <th colspan="2" class="th-group-var">VARIAÇÃO</th>
+      <th colspan="2" class="th-group-gp">GANHO / PERDA</th>
+    </tr>
+    <tr>
+      <th class="th-sub-meta">QTD</th>
+      <th class="th-sub-meta">Preço Líq.</th>
+      <th class="th-sub-real">QTD</th>
+      <th class="th-sub-real">Preço Líq.</th>
+      <th class="th-sub-var">Δ QTD</th>
+      <th class="th-sub-var">Δ Preço Líq.</th>
+      <th class="th-sub-gp">G/P QTD</th>
+      <th class="th-sub-gp">G/P Preço Líq.</th>
+    </tr>
+  </thead>
+  <tbody>`;
+
+  // totalizadores por produto
+  const totProd = {};
+  for (const prod of produtos) {
+    totProd[prod] = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0};
+  }
+
+  // grand totals
+  let GT = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0};
+
+  for (const linha of linhas) {
+    const prods = map[linha] || {};
+    const prodList = produtos.filter(p => prods[p]);
+    if (!prodList.length) continue;
+
+    // subtotais da linha
+    let ST = {metaQtd:0, metaPreco:0, realQtd:0, realPreco:0};
+    for (const p of prodList) {
+      const d = prods[p];
+      ST.metaQtd   += d.metaQtd;
+      ST.metaPreco += d.metaPreco;
+      ST.realQtd   += d.realQtd;
+      ST.realPreco += d.realPreco;
+      totProd[p].metaQtd   += d.metaQtd;
+      totProd[p].metaPreco += d.metaPreco;
+      totProd[p].realQtd   += d.realQtd;
+      totProd[p].realPreco += d.realPreco;
+    }
+    GT.metaQtd   += ST.metaQtd;
+    GT.metaPreco += ST.metaPreco;
+    GT.realQtd   += ST.realQtd;
+    GT.realPreco += ST.realPreco;
+
+    // linhas de produtos
+    for (let i = 0; i < prodList.length; i++) {
+      const prod = prodList[i];
+      const d    = prods[prod];
+      html += matrixRow(i === 0 ? linha : '', prodList.length, prod, d, i === 0);
+    }
+
+    // subtotal da linha
+    html += subtotalRow(`↳ ${linha}`, ST);
+  }
+
+  // TOTAL GERAL
+  html += grandTotalRow(GT);
+
+  html += '</tbody></table>';
+  document.getElementById('tableContainer').innerHTML = html;
+}
+
+function matrixRow(linha, span, produto, d, isFirst) {
+  const varQtd   = d.realQtd   - d.metaQtd;
+  const varPreco = d.realPreco - d.metaPreco;
+  const pctQtd   = d.metaQtd   ? (varQtd/d.metaQtd*100)     : 0;
+  const pctPreco = d.metaPreco ? (varPreco/d.metaPreco*100)  : 0;
+
+  const cQ  = varQtd   > 0 ? 'num-pos' : varQtd   < 0 ? 'num-neg' : 'num-zero';
+  const cP  = varPreco > 0 ? 'num-pos' : varPreco < 0 ? 'num-neg' : 'num-zero';
+  const gpQ = varQtd   > 0 ? 'num-gp-pos' : varQtd   < 0 ? 'num-gp-neg' : 'num-zero';
+  const gpP = varPreco > 0 ? 'num-gp-pos' : varPreco < 0 ? 'num-gp-neg' : 'num-zero';
+
+  const arrowQ = varQtd   > 0 ? '▲ ' : varQtd   < 0 ? '▼ ' : '';
+  const arrowP = varPreco > 0 ? '▲ ' : varPreco < 0 ? '▼ ' : '';
+
+  return `<tr>
+    <td class="prod-name" style="color:var(--text-dim);font-size:11px">${escH(linha)}</td>
+    <td class="prod-name">${escH(produto)}</td>
+    <td class="num-meta">${fmt(d.metaQtd)}</td>
+    <td class="num-meta">R$ ${fmtR(d.metaPreco)}</td>
+    <td class="num-real">${fmt(d.realQtd)}</td>
+    <td class="num-real">R$ ${fmtR(d.realPreco)}</td>
+    <td class="num-var ${cQ}">${arrowQ}${fmt(Math.abs(varQtd))} (${fmtPct(pctQtd)})</td>
+    <td class="num-var ${cP}">${arrowP}R$ ${fmtR(Math.abs(varPreco))} (${fmtPct(pctPreco)})</td>
+    <td class="${gpQ}">${varQtd > 0 ? '+' : varQtd < 0 ? '-' : ''}${fmt(Math.abs(varQtd))}</td>
+    <td class="${gpP}">${varPreco >= 0 ? '+' : '-'}R$ ${fmtR(Math.abs(varPreco))}</td>
+  </tr>`;
+}
+
+function subtotalRow(label, d) {
+  const varQtd   = d.realQtd   - d.metaQtd;
+  const varPreco = d.realPreco - d.metaPreco;
+  const pctQtd   = d.metaQtd   ? (varQtd/d.metaQtd*100)    : 0;
+  const pctPreco = d.metaPreco ? (varPreco/d.metaPreco*100) : 0;
+
+  const cQ  = varQtd   > 0 ? 'num-pos' : varQtd   < 0 ? 'num-neg' : 'num-zero';
+  const cP  = varPreco > 0 ? 'num-pos' : varPreco < 0 ? 'num-neg' : 'num-zero';
+  const gpQ = varQtd   > 0 ? 'num-gp-pos' : varQtd   < 0 ? 'num-gp-neg' : 'num-zero';
+  const gpP = varPreco > 0 ? 'num-gp-pos' : varPreco < 0 ? 'num-gp-neg' : 'num-zero';
+
+  return `<tr style="background:rgba(255,255,255,.015);border-top:1px solid var(--border2)">
+    <td colspan="2" class="prod-name" style="color:var(--text-mute);font-size:11px;font-style:italic">${escH(label)}</td>
+    <td class="num-meta" style="font-weight:600">${fmt(d.metaQtd)}</td>
+    <td class="num-meta" style="font-weight:600">R$ ${fmtR(d.metaPreco)}</td>
+    <td class="num-real" style="font-weight:600">${fmt(d.realQtd)}</td>
+    <td class="num-real" style="font-weight:600">R$ ${fmtR(d.realPreco)}</td>
+    <td class="num-var ${cQ}" style="font-weight:600">${fmt(varQtd)} (${fmtPct(pctQtd)})</td>
+    <td class="num-var ${cP}" style="font-weight:600">R$ ${fmtR(varPreco)} (${fmtPct(pctPreco)})</td>
+    <td class="${gpQ}">${varQtd >= 0 ? '+' : ''}${fmt(varQtd)}</td>
+    <td class="${gpP}">${varPreco >= 0 ? '+' : ''}R$ ${fmtR(varPreco)}</td>
+  </tr>`;
+}
+
+function grandTotalRow(d) {
+  const varQtd   = d.realQtd   - d.metaQtd;
+  const varPreco = d.realPreco - d.metaPreco;
+  const pctQtd   = d.metaQtd   ? (varQtd/d.metaQtd*100)    : 0;
+  const pctPreco = d.metaPreco ? (varPreco/d.metaPreco*100) : 0;
+
+  const cQ  = varQtd   > 0 ? 'num-pos' : varQtd   < 0 ? 'num-neg' : 'num-zero';
+  const cP  = varPreco > 0 ? 'num-pos' : varPreco < 0 ? 'num-neg' : 'num-zero';
+  const gpQ = varQtd   > 0 ? 'num-gp-pos' : varQtd   < 0 ? 'num-gp-neg' : 'num-zero';
+  const gpP = varPreco > 0 ? 'num-gp-pos' : varPreco < 0 ? 'num-gp-neg' : 'num-zero';
+
+  return `<tr class="total-row">
+    <td colspan="2" class="prod-name">TOTAL GERAL</td>
+    <td>${fmt(d.metaQtd)}</td>
+    <td>R$ ${fmtR(d.metaPreco)}</td>
+    <td>${fmt(d.realQtd)}</td>
+    <td>R$ ${fmtR(d.realPreco)}</td>
+    <td class="${cQ}">${fmt(varQtd)} (${fmtPct(pctQtd)})</td>
+    <td class="${cP}">R$ ${fmtR(varPreco)} (${fmtPct(pctPreco)})</td>
+    <td class="${gpQ}" style="font-size:13px">${varQtd >= 0 ? '+' : ''}${fmt(varQtd)}</td>
+    <td class="${gpP}" style="font-size:13px">${varPreco >= 0 ? '+' : ''}R$ ${fmtR(varPreco)}</td>
+  </tr>`;
+}
+
+function escH(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ══════════════════════════════════════════════════════════
+   ▸  BUSCA
+   ══════════════════════════════════════════════════════════ */
+document.getElementById('searchInput').addEventListener('input', e => {
+  search = e.target.value.trim();
+  render();
+});
+
+/* ══════════════════════════════════════════════════════════
+   ▸  BOOT
+   ══════════════════════════════════════════════════════════ */
+loadData();
+</script>
+</body>
+</html>
